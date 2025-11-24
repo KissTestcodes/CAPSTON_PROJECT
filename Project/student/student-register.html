@@ -115,7 +115,10 @@
 
     <script>
         feather.replace();
-        const API_BASE_URL = 'http://localhost:3000'; 
+        // --- START: CHANGES FOR RAILWAY DEPLOYMENT ---
+        // REPLACE 'https://YOUR-RAILWAY-DOMAIN.up.railway.app' with the actual URL Railway gives your backend service.
+        const API_BASE_URL = 'https://YOUR-RAILWAY-DOMAIN.up.railway.app'; 
+        // --- END: CHANGES FOR RAILWAY DEPLOYMENT ---
 
         document.getElementById('studentRegisterForm').addEventListener('submit', async function(e) {
             e.preventDefault();
