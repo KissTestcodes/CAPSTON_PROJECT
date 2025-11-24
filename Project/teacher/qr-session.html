@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Session | IETI EduTrack</title>
+    <link rel="icon" type="image/x-icon" href="../static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #006400 0%, #4CAF50 100%); }
+        .sidebar { background-color: #004d00; min-height: 100vh; }
+        /* Scanner Styles */
+        .qr-active-border { border: 4px solid #10B981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+        .qr-inactive-border { border: 4px dashed #cbd5e1; }
+        .request-card { transition: all 0.3s ease; }
+        .request-card:hover { transform: translateX(5px); }
+    </style>
+</head>
+<body class="flex bg-gray-100">
+
+    <div class="sidebar text-white w-20 flex flex-col items-center py-6 space-y-6 fixed md:relative z-30">
+        <img src="../static/ieti-logo.png" alt="Logo" class="w-10 h-10">
+        <a href="subject-management.html" class="p-3 rounded-lg hover:bg-green-700 transition" title="Back to Subject"><i data-feather="arrow-left" class="w-6 h-6"></i></a>
+        <div class="flex-grow"></div>
+    </div>
+
+    <div class="flex-1 p-8 overflow-y-auto h-screen">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Live Attendance Session</h1>
+                <p class="text-gray-500">Subject: <span class="font-bold text-green-700">IT 401 - Web Development</span></p>
+            </div>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <div class="flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+                    <div class="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse" id="status-dot"></div>
+                    <span class="text-sm font-bold text-gray-600" id="status-text">Session Inactive</span>
+                </div>
+                <div class="bg-gray-100 px-4 py-2 rounded-full font-mono text-lg font-bold text-green-700 shadow-inner border border-gray-300">
+                    <span id="timer">05:00</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="bg-white p-4 rounded-xl shadow-md border border-gray-200 mb-8 flex justify-between items-center" id="timer-control-panel">
+            <h3 class="font-bold text-gray-700 flex items-center">
+                <i data-feather="clock" class="w-5 h-5 mr-2 text-green-600"></i> Adjust Session Duration
+            </h3>
+            <div class="flex items-center space-x-3">
+                <div class="relative">
+                    <input type="number" id="session-minutes" value="5" min="1" max="60" class="w-16 px-3 py-1.5 border border-gray-300 rounded-lg text-center font-mono text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500">
+                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">min</span>
+                </div>
+                <button onclick="setNewTimer()" class="bg-blue-600 text-white text-sm font-bold px-4 py-1.5 rounded-lg hover:bg-blue-700 flex items-center transition-colors">
+                    <i data-feather="repeat" class="w-4 h-4 mr-1"></i> Update Timer
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="bg-white p-6 rounded-2xl shadow-lg text-center transition-all qr-inactive-border flex flex-col items-center" id="qr-container">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Student Scan Code</h2>
+                        <div id="qr-display" class="w-64 h-64 bg-gray-50 mx-auto flex items-center justify-center rounded-lg mb-6">
+                            <p class="text-gray-400 text-sm">QR Code will appear here</p>
+                        </div>
+                        
+                        <div class="flex justify-center space-x-4 w-full" id="control-buttons">
+                            <button onclick="startSession()" class="gradient-bg text-white flex-1 px-8 py-3 rounded-full font-bold shadow-lg hover:opacity-90 hover:-translate-y-0.5 transition-all flex items-center justify-center">
+                                <i data-feather="play" class="w-5 h-5 mr-2"></i> Start Session
+                            </button>
+                        </div>
+                        <button onclick="stopSession()" id="stop-btn" class="hidden bg-red-500 text-white w-full px-8 py-3 rounded-full font-bold shadow-lg hover:bg-red-600 transition-all flex items-center justify-center">
+                            <i data-feather="stop-circle" class="w-5 h-5 mr-2"></i> Stop Session
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-md flex flex-col">
+                        <h3 class="font-bold text-gray-700 mb-4 flex items-center"><i data-feather="camera" class="w-5 h-5 mr-2 text-blue-600"></i> Manual Scanner</h3>
+                        <div id="reader" class="w-full h-full min-h-[250px] bg-black rounded-lg overflow-hidden"></div>
+                        <p class="text-xs text-center text-gray-400 mt-2">Use this if a student cannot scan the main code.</p>
+                    </div>
+
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-lg mt-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i data-feather="users" class="w-6 h-6 mr-2 text-green-700"></i> Manual Student Lookup
+                    </h2>
+                    <p class="text-sm text-gray-500 mb-4">Use this section to manually find and mark attendance if scanning fails.</p>
+                    
+                    <div class="mb-4">
+                        <input type="text" id="student-search" onkeyup="filterStudents()" placeholder="Search Student Name..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div class="overflow-x-auto max-h-96 border border-gray-200 rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status (Session)</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="enrolled-students-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-lg h-full max-h-[80vh] flex flex-col">
+                    <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-800">Incoming Requests</h2>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full" id="req-count">0</span>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="requests-feed">
+                        <p class="text-center text-gray-400 text-sm mt-10 italic" id="empty-msg">Waiting for scans...</p>
+                        </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        feather.replace();
+        let isActive = false;
+        let timerInterval;
+        let totalSeconds = 300; // Default 5 minutes
+
+        // MOCK DATA for Enrolled Students
+        // Note: I'm keeping a unique ID internally for the mock functions, but it's hidden from the UI.
+        const mockEnrolledStudents = [
+            { id: '2022-001-A', name: 'Alonzo, Mark', status: 'PENDING' },
+            { id: '2022-002-B', name: 'Bautista, Sarah', status: 'PENDING' },
+            { id: '2022-003-C', name: 'Cruz, John', status: 'PENDING' },
+            { id: '2022-004-D', name: 'Dizon, Liza', status: 'PRESENT' }, 
+            { id: '2022-005-E', name: 'Escobar, Ben', status: 'PENDING' },
+            { id: '2022-006-F', name: 'Fabian, Grace', status: 'PENDING' },
+        ];
+
+
+        // --- TIMER FUNCTIONS ---
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = seconds % 60;
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+
+            const timerDisplay = document.getElementById('timer');
+            timerDisplay.textContent = formatTime(totalSeconds);
+
+            timerInterval = setInterval(() => {
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = '00:00 - Ended';
+                    document.getElementById('status-dot').classList.replace('bg-green-500', 'bg-red-500');
+                    document.getElementById('status-text').textContent = 'Session Ended';
+                    Swal.fire({ title: 'Session Ended', text: 'The QR attendance session has timed out.', icon: 'warning', confirmButtonColor: '#d33' });
+                    return;
+                }
+                totalSeconds--;
+                timerDisplay.textContent = formatTime(totalSeconds);
+            }, 1000);
+        }
+
+        function setNewTimer() {
+            const minutesInput = document.getElementById('session-minutes');
+            const minutes = parseInt(minutesInput.value);
+
+            if (minutes > 0 && minutes <= 60) {
+                if (isActive) {
+                     Swal.fire({
+                        title: 'Timer Reset?',
+                        text: 'A new duration will stop the current session. Proceed?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#006400',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, Reset'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            totalSeconds = minutes * 60; 
+                            stopSession(); 
+                        }
+                    });
+                    return;
+                }
+                
+                totalSeconds = minutes * 60;
+                document.getElementById('timer').textContent = formatTime(totalSeconds);
+                Swal.fire({ title: 'Timer Set', text: `Session duration updated to ${minutes} minutes.`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+            } else {
+                Swal.fire({ title: 'Invalid Time', text: 'Please enter a value between 1 and 60 minutes.', icon: 'error' });
+                minutesInput.value = totalSeconds / 60; 
+            }
+        }
+
+
+        // --- MANUAL LOOKUP FUNCTIONS ---
+        function renderStudentTable(students) {
+            const tbody = document.getElementById('enrolled-students-body');
+            tbody.innerHTML = ''; 
+            
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-400 italic">No students found matching your search.</td></tr>';
+                return;
+            }
+
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                row.id = `student-row-${student.id}`;
+                
+                let statusBadge;
+                let buttonHTML;
+
+                if (student.status === 'PRESENT') {
+                    statusBadge = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">PRESENT</span>';
+                    buttonHTML = '<button disabled class="bg-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded opacity-50 cursor-not-allowed">Logged</button>';
+                } else {
+                    statusBadge = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">PENDING</span>';
+                    buttonHTML = `<button onclick="manualAttendance('${student.id}', '${student.name}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded transition">Mark Present</button>`;
+                }
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">${student.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${statusBadge}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium" id="manual-action-${student.id}">
+                        ${buttonHTML}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterStudents() {
+            const searchInput = document.getElementById('student-search').value.toLowerCase();
+            const filtered = mockEnrolledStudents.filter(student => 
+                // Search by Name only now
+                student.name.toLowerCase().includes(searchInput) 
+            );
+            renderStudentTable(filtered);
+        }
+
+        function manualAttendance(studentId, studentName) {
+            if (!isActive) {
+                Swal.fire({ title: 'Session Inactive', text: 'You must start the QR session before manually logging attendance.', icon: 'warning', confirmButtonColor: '#006400' });
+                return;
+            }
+
+            Swal.fire({
+                title: `Confirm Attendance for ${studentName}?`,
+                text: 'This action will manually mark the student as present for this session.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Mark Present',
+                confirmButtonColor: '#006400'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Update mock data status
+                    const student = mockEnrolledStudents.find(s => s.id === studentId);
+                    if (student) {
+                        student.status = 'PRESENT';
+                    }
+                    
+                    // Update UI for the specific row
+                    // Indexing is 2 and 3 because the Student ID column was removed.
+                    const statusCell = document.querySelector(`#student-row-${studentId} td:nth-child(2)`);
+                    const actionCell = document.getElementById(`manual-action-${studentId}`);
+                    
+                    if (statusCell) {
+                        statusCell.innerHTML = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">PRESENT</span>';
+                    }
+                    if (actionCell) {
+                        actionCell.innerHTML = '<button disabled class="bg-gray-300 text-gray-600 text-xs px-3 py-1.5 rounded opacity-50 cursor-not-allowed">Logged</button>';
+                    }
+
+                    // MOCK: Add the manual log to the live feed for teacher confirmation 
+                    addRequest('manual', studentName, studentId);
+
+                    Swal.fire({ title: 'Attendance Logged!', text: `${studentName} has been marked as present.`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                }
+            });
+        }
+
+
+        // --- SESSION CONTROL ---
+        function startSession() {
+            isActive = true;
+            document.getElementById('qr-container').classList.replace('qr-inactive-border', 'qr-active-border');
+            document.getElementById('control-buttons').classList.add('hidden');
+            document.getElementById('stop-btn').classList.remove('hidden');
+            
+            // Status Update
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            dot.classList.replace('bg-red-500', 'bg-green-500');
+            text.textContent = 'Session Active';
+            text.classList.add('text-green-600');
+
+            // Start Timer
+            startTimer();
+
+            // Generate QR (Data format: SUBJECT_CODE|SESSION_ID)
+            const qrContainer = document.getElementById('qr-display');
+            qrContainer.innerHTML = '';
+            QRCode.toCanvas(qrContainer, 'IT401|SESSION_ID_123', { width: 250, color: { dark: '#004d00' } });
+
+            // Start Camera
+            startScanner();
+            
+            // Re-render table to ensure buttons are active
+            renderStudentTable(mockEnrolledStudents);
+        }
+
+        function stopSession() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            Swal.fire({
+                title: 'Session Ended',
+                text: 'The attendance session has been successfully closed.',
+                icon: 'success',
+                confirmButtonColor: '#006400'
+            }).then(() => {
+                location.reload(); 
+            });
+        }
+
+
+        // --- SCANNER AND REQUESTS (Mock functions) ---
+        function startScanner() {
+            const html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, 
+                (decodedText, decodedResult) => { 
+                    handleScan(decodedText); 
+                },
+                (err) => { 
+                    // console.warn(`QR Scanner Error: ${err}`); 
+                }
+            );
+        }
+
+        function handleScan(qrData) {
+            // Updated to look for a unique identifier and name, even if the "ID" field is not student-facing
+            const parts = qrData.split('|');
+            // Assuming the student's QR is formatted as: STUDENT|UNIQUE_KEY|NAME
+            if (parts.length === 3 && parts[0] === 'STUDENT') {
+                const uniqueId = parts[1];
+                const studentName = parts[2];
+                // Use the unique ID for tracking requests internally
+                if (!document.getElementById(`req-${uniqueId}`)) {
+                    // MOCK: Check if it's a new student or not for enrollment vs attendance request
+                    const isNewStudent = uniqueId === '2022-005-E'; 
+                    const type = isNewStudent ? 'enrollment' : 'attendance';
+                    addRequest(type, studentName, uniqueId);
+                    
+                    // Also update the manual lookup table status
+                    const student = mockEnrolledStudents.find(s => s.id === uniqueId);
+                    if (student && student.status !== 'PRESENT') {
+                        // MOCK: Auto-log attendance after successful scan (if not already present)
+                        manualAttendance(uniqueId, studentName); 
+                    }
+                }
+            }
+        }
+
+        function addRequest(type, name, id) {
+            document.getElementById('empty-msg').style.display = 'none';
+            const feed = document.getElementById('requests-feed');
+            const count = document.getElementById('req-count');
+            count.textContent = parseInt(count.textContent) + 1;
+
+            const isEnroll = type === 'enrollment';
+            const color = isEnroll ? 'blue' : (type === 'manual' ? 'purple' : 'yellow');
+            const badge = isEnroll ? 'New Enrollment' : (type === 'manual' ? 'Manual Log' : 'Attendance Check');
+            const btnText = isEnroll ? 'Enroll & Log' : 'Validate';
+
+            const card = document.createElement('div');
+            card.className = `request-card bg-white border-l-4 border-${color}-500 p-4 rounded shadow-sm flex flex-col`;
+            // Note: Using the internal ID for unique request tracking
+            card.id = `req-${id}`; 
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm">${name}</h4>
+                        <p class="text-xs text-gray-500">${id}</p>
+                    </div>
+                    <span class="bg-${color}-100 text-${color}-800 text-[10px] font-bold px-2 py-1 rounded uppercase">${badge}</span>
+                </div>
+                <div class="flex space-x-2 mt-1">
+                    <button onclick="this.parentElement.parentElement.remove()" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 rounded transition">${btnText}</button>
+                    <button onclick="this.parentElement.parentElement.remove()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-bold py-2 rounded transition">Decline</button>
+                </div>
+            `;
+            feed.prepend(card);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+             // Initial setup
+            document.getElementById('timer').textContent = formatTime(totalSeconds);
+            renderStudentTable(mockEnrolledStudents); // Populate the manual lookup table
+            feather.replace();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal | IETI EduTrack</title>
+    <link rel="icon" type="image/x-icon" href="../static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script> 
+    <style>
+        body {
+            background-color: #ffffff;
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('../static/ieti-logo.png');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: 400px auto;
+            opacity: 0.1;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .admin-sidebar { 
+            background-color: #1f2937; 
+            min-height: 100vh; 
+            z-index: 10;
+            position: relative;
+        }
+        .nav-item.active { 
+            background-color: #374151; 
+            border-left: 4px solid #10B981; 
+        }
+        
+        .main-content {
+            position: relative;
+            z-index: 5;
+        }
+        
+        /* Animation for page transitions */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <div class="admin-sidebar text-white w-64 flex-shrink-0 transition-all duration-300">
+        <div class="flex items-center px-6 py-8 border-b border-gray-700">
+            <img src="../static/ieti-logo.png" alt="Logo" class="w-8 h-8 mr-3">
+            <span class="text-xl font-bold tracking-wider">IETI EduTrack</span>
+        </div>
+        <nav class="mt-6 px-2 space-y-2">
+            <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item active block py-3 px-4 rounded transition duration-200 text-gray-300 hover:bg-gray-700 hover:text-white">
+                <div class="flex items-center">
+                    <i data-feather="home" class="w-5 h-5 mr-3"></i>
+                    <span>Dashboard</span>
+                </div>
+            </a>
+            <a href="#" onclick="switchTab('requests')" id="nav-requests" class="nav-item block py-3 px-4 rounded transition duration-200 text-gray-300 hover:bg-gray-700 hover:text-white">
+                <div class="flex items-center">
+                    <i data-feather="user-check" class="w-5 h-5 mr-3"></i>
+                    <span>Faculty Requests</span>
+                    <span id="request-badge" class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{COUNT}</span>
+                </div>
+            </a>
+            <a href="#" onclick="switchTab('database')" id="nav-database" class="nav-item block py-3 px-4 rounded transition duration-200 text-gray-300 hover:bg-gray-700 hover:text-white">
+                <div class="flex items-center">
+                    <i data-feather="users" class="w-5 h-5 mr-3"></i>
+                    <span>User Database</span>
+                </div>
+            </a>
+            <a href="#" onclick="switchTab('analytics')" id="nav-analytics" class="nav-item block py-3 px-4 rounded transition duration-200 text-gray-300 hover:bg-gray-700 hover:text-white">
+                <div class="flex items-center">
+                    <i data-feather="bar-chart-2" class="w-5 h-5 mr-3"></i>
+                    <span>Analytics</span>
+                </div>
+            </a>
+            <a href="../index.html" class="block py-3 px-4 rounded transition duration-200 mt-10 text-red-400 hover:bg-gray-700 hover:text-red-200">
+                <div class="flex items-center">
+                    <i data-feather="log-out" class="w-5 h-5 mr-3"></i>
+                    <span>Logout</span>
+                </div>
+            </a>
+        </nav>
+    </div>
+
+    <div class="main-content flex-1 overflow-x-hidden overflow-y-auto p-8 custom-scrollbar">
+        
+        <div id="section-dashboard" class="animate-fade-in">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
+            <p class="text-gray-600 mb-6">Welcome to IETI EduTrack Administration Portal</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-500 mr-4">
+                            <i data-feather="users" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Users</p>
+                            <h3 class="text-2xl font-bold text-gray-800">Loading...</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-500 mr-4">
+                            <i data-feather="clock" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Pending Requests</p>
+                            <h3 class="text-2xl font-bold text-gray-800">Loading...</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button onclick="switchTab('requests')" class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center">
+                        <i data-feather="user-check" class="w-5 h-5 text-blue-500 mr-3"></i>
+                        <span>Review Faculty Requests</span>
+                    </button>
+                    <button onclick="switchTab('database')" class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center">
+                        <i data-feather="users" class="w-5 h-5 text-green-500 mr-3"></i>
+                        <span>Manage Users</span>
+                    </button>
+                    <button onclick="createNewUser()" class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center">
+                        <i data-feather="user-plus" class="w-5 h-5 text-purple-500 mr-3"></i>
+                        <span>Add New User</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+                <div id="activity-log" class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                    <div class="py-2 text-center text-gray-500 italic border-dashed border-2 border-gray-200 rounded-lg">
+                        Loading activity logs...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-requests" class="hidden animate-fade-in">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Faculty Account Approvals</h1>
+            <p class="text-gray-600 mb-6">Review and approve pending teacher registration requests.</p>
+            <div class="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
+                <table class="min-w-full leading-normal">
+                    <thead>
+                        <tr>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Teacher Name</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date Requested</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teacherRequestTable">
+                        <tr>
+                            <td colspan="4" class="px-5 py-8 text-center text-gray-400 italic">No pending faculty requests.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="section-database" class="hidden animate-fade-in">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">User Database</h1>
+            <p class="text-gray-600 mb-6">View and manage all active users (Students, Faculty, and Admin).</p>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-3 md:space-y-0">
+                <div class="flex space-x-2">
+                    <button id="filter-all" onclick="setFilter('all')" class="px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">All</button>
+                    <button id="filter-student" onclick="setFilter('student')" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Students</button>
+                    <button id="filter-teacher" onclick="setFilter('teacher')" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Faculty</button>
+                    <button id="filter-admin" onclick="setFilter('admin')" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Admin</button>
+                </div>
+                <div class="relative w-full md:w-64">
+                    <input type="text" id="searchByName" placeholder="Search by name, email, or course..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" >
+                    <i data-feather="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                </div>
+            </div>
+            <div class="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
+                <table class="min-w-full leading-normal">
+                    <thead>
+                        <tr>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Full Name</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email / ID</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Course / Faculty</th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-50 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userDatabaseTable">
+                        <tr>
+                            <td colspan="5" class="px-5 py-8 text-center text-gray-400 italic">No users loaded. Connect your backend API to fetch and display the user database.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="section-analytics" class="hidden animate-fade-in">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">System Analytics</h1>
+            <p class="text-gray-600 mb-6">Visualizations of user distribution within the system.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 min-h-64 flex flex-col justify-center items-center">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">User Distribution (Students vs. Faculty)</h3>
+                    <div id="chart-container" class="w-full max-w-sm">
+                        <canvas id="userDistributionChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 min-h-64 flex justify-center items-center">
+                    <p class="text-gray-500 italic">Other attendance and system usage metrics charts can be added here.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        feather.replace();
+        const API_BASE_URL = 'http://localhost:3000'; 
+        
+        let allUsers = []; // Stores all fetched teachers/students for filtering
+        let currentRoleFilter = 'all'; 
+        let currentSearchTerm = '';
+        let userChartInstance = null; // To hold the Chart.js instance
+
+        // --- NAVIGATION LOGIC ---
+        function switchTab(tabName) {
+            // Hide all sections
+            document.getElementById('section-dashboard').classList.add('hidden');
+            document.getElementById('section-requests').classList.add('hidden');
+            document.getElementById('section-database').classList.add('hidden');
+            document.getElementById('section-analytics').classList.add('hidden');
+
+            // Reset Nav Active State
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+            // Show selected
+            document.getElementById(`section-${tabName}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabName}`).classList.add('active');
+
+            // Trigger data fetch on switch
+            if (tabName === 'requests') {
+                fetchRequests();
+            } else if (tabName === 'database') {
+                fetchDatabase();
+            } else if (tabName === 'dashboard') {
+                fetchDashboardStats(); // Fetch stats and activity log
+            } else if (tabName === 'analytics') {
+                renderAnalyticsChart(); // Fetch data and render chart
+            }
+        }
+        
+        // --- DATA FETCHING FUNCTIONS ---
+
+        /** Fetches the overall counts and activity log for the main dashboard cards. */
+        async function fetchDashboardStats() {
+            // Set initial state for the 2 remaining cards
+            const statH3s = document.querySelectorAll('#section-dashboard .grid h3');
+            if (statH3s[0]) statH3s[0].textContent = 'Loading...'; // Total Users (Index 0)
+            if (statH3s[1]) statH3s[1].textContent = 'Loading...'; // Pending Requests (Index 1)
+
+            // Activity Log: Set loading state
+            document.getElementById('activity-log').innerHTML = `<div class="py-2 text-center text-gray-500 italic">Loading activity logs...</div>`;
+
+            try {
+                // Fetch all data necessary for client-side counting and activity log
+                const [teachersRes, studentsRes, activitiesRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/admin/teachers`),
+                    fetch(`${API_BASE_URL}/api/admin/students`),
+                    fetch(`${API_BASE_URL}/api/admin/activities`) // Fetch Activity Log
+                ]);
+                
+                const [teachersData, studentsData, activitiesData] = await Promise.all([
+                    teachersRes.json(),
+                    studentsRes.json(),
+                    activitiesRes.json()
+                ]);
+                
+                // Calculate counts
+                const totalTeachers = teachersData.teachers ? teachersData.teachers.length : 0;
+                const totalStudents = studentsData.students ? studentsData.students.length : 0;
+                const totalPending = teachersData.teachers ? teachersData.teachers.filter(t => t.status === 'pending').length : 0;
+                const totalUsers = totalTeachers + totalStudents;
+
+                // Update the dashboard cards (0-based indexing for the 2 cards)
+                if (statH3s[0]) statH3s[0].textContent = totalUsers; // Total Users
+                if (statH3s[1]) statH3s[1].textContent = totalPending; // Pending Requests
+                
+                // Update badge
+                const badge = document.getElementById('request-badge');
+                if (totalPending > 0) {
+                    badge.textContent = totalPending;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.textContent = '';
+                    badge.classList.add('hidden');
+                }
+                
+                // Render Activity Log
+                if (activitiesData.success) {
+                    renderActivityLog(activitiesData.activities);
+                } else {
+                    renderActivityLog([]); // Fallback
+                }
+                
+            } catch (error) {
+                console.error('Fetch Dashboard Stats Connection Error:', error);
+                if (statH3s[0]) statH3s[0].textContent = 'Error';
+                if (statH3s[1]) statH3s[1].textContent = 'Error';
+                document.getElementById('activity-log').innerHTML = `<div class="py-2 text-center text-red-500 italic">Error loading activity log.</div>`;
+            }
+        }
+
+        /** Fetches pending teacher requests for the 'Faculty Requests' section. */
+        async function fetchRequests() {
+            const tableBody = document.getElementById('teacherRequestTable');
+            const badge = document.getElementById('request-badge');
+            tableBody.innerHTML = `<tr><td colspan="4" class="px-5 py-8 text-center text-gray-500 italic">Loading requests...</td></tr>`;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/teachers`);
+                const data = await response.json();
+
+                if (data.success && data.teachers) {
+                    const pendingTeachers = data.teachers.filter(t => t.status === 'pending');
+                    
+                    badge.textContent = pendingTeachers.length > 0 ? pendingTeachers.length : '';
+                    if (pendingTeachers.length === 0) {
+                        badge.classList.add('hidden');
+                        tableBody.innerHTML = `<tr><td colspan="4" class="px-5 py-8 text-center text-gray-400 italic">No pending faculty requests.</td></tr>`;
+                        return;
+                    }
+                    badge.classList.remove('hidden');
+
+                    tableBody.innerHTML = pendingTeachers.map(teacher => {
+                        const date = new Date(teacher.created_at).toLocaleDateString('en-US', { dateStyle: 'medium' });
+                        return `
+                            <tr id="req-${teacher.id}" class="hover:bg-gray-50 transition-colors">
+                                <td class="px-5 py-4 border-b border-gray-200 text-sm font-medium text-gray-900">${teacher.full_name}</td>
+                                <td class="px-5 py-4 border-b border-gray-200 text-sm text-gray-500">${teacher.email}</td>
+                                <td class="px-5 py-4 border-b border-gray-200 text-sm text-gray-500">${date}</td>
+                                <td class="px-5 py-4 border-b border-gray-200 text-sm text-right space-x-2">
+                                    <button onclick="updateTeacherStatus(${teacher.id}, 'active', '${teacher.full_name}')" 
+                                            class="bg-green-500 hover:bg-green-600 text-white font-medium py-1 px-3 rounded-md transition duration-150 text-xs">Approve</button>
+                                    <button onclick="updateTeacherStatus(${teacher.id}, 'inactive', '${teacher.full_name}')" 
+                                            class="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-3 rounded-md transition duration-150 text-xs">Deny</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="px-5 py-8 text-center text-red-500 italic">Failed to load requests: ${data.message || 'Server error.'}</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Fetch Requests Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="4" class="px-5 py-8 text-center text-red-500 italic">Connection Error. Is the Node.js server running?</td></tr>`;
+            }
+        }
+        
+        /** Fetches and combines all users (Students & Teachers) for the 'User Database' section. */
+        async function fetchDatabase() {
+            const tableBody = document.getElementById('userDatabaseTable');
+            tableBody.innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-gray-500 italic">Loading user database...</td></tr>`;
+            allUsers = []; // Clear previous data
+
+            try {
+                const [teachersRes, studentsRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/admin/teachers`),
+                    fetch(`${API_BASE_URL}/api/admin/students`)
+                ]);
+                
+                const [teachersData, studentsData] = await Promise.all([
+                    teachersRes.json(),
+                    studentsRes.json()
+                ]);
+
+                if (teachersData.success && studentsData.success) {
+                    // Map Teacher data
+                    const teachers = teachersData.teachers.map(t => ({
+                        id: t.id,
+                        role: t.email === 'admin@ieti.edu.ph' ? 'admin' : 'teacher', // Identify admin separately
+                        name: t.full_name,
+                        email: t.email,
+                        status: t.status,
+                        password: t.password, // Include password for pre-filling edit modal (DO NOT LOG OR DISPLAY)
+                        meta: 'Faculty' // This is the new Course/Faculty column content
+                    }));
+
+                    // Map Student data
+                    const students = studentsData.students.map(s => ({
+                        id: s.id,
+                        role: 'student',
+                        name: s.full_name,
+                        email: s.email,
+                        status: 'active', // Assuming students are active upon registration
+                        password: s.password, // Include password for pre-filling edit modal (DO NOT LOG OR DISPLAY)
+                        meta: `${s.course} (${s.year_level})`, // This is the new Course/Faculty column content
+                        course: s.course, // Student-specific fields
+                        year_level: s.year_level
+                    }));
+
+                    allUsers = [...teachers, ...students];
+                    renderDatabase(allUsers);
+                } else {
+                    Swal.fire('Error', 'Failed to load user data from one or both databases.', 'error');
+                }
+
+            } catch (error) {
+                console.error('Fetch Database Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-red-500 italic">Connection Error. Is the Node.js server running?</td></tr>`;
+            }
+        }
+
+        // --- RENDERING & ACTION LOGIC ---
+
+        function renderActivityLog(activities) {
+            const logContainer = document.getElementById('activity-log');
+            
+            if (activities.length === 0) {
+                logContainer.innerHTML = `<div class="py-2 text-center text-gray-400 italic border-dashed border-2 border-gray-200 rounded-lg">No recent activity logged.</div>`;
+                return;
+            }
+
+            logContainer.innerHTML = activities.map(activity => {
+                const isNew = activity.description.startsWith('NEW');
+                const isDenied = activity.description.includes('DENIED');
+                const isApproved = activity.description.includes('APPROVED');
+                const isEdited = activity.description.includes('EDITED/UPDATED');
+                const isRemoved = activity.description.includes('REMOVED');
+
+
+                let bgColor, icon;
+                if (isDenied || isRemoved) {
+                    bgColor = 'bg-red-50';
+                    icon = isRemoved ? 'trash-2' : 'x-circle';
+                } else if (isApproved || isEdited) {
+                    bgColor = 'bg-green-50';
+                    icon = 'check-circle';
+                } else if (isNew) {
+                    bgColor = 'bg-blue-50';
+                    icon = 'plus-circle';
+                } else {
+                    bgColor = 'bg-gray-50';
+                    icon = 'activity';
+                }
+
+                return `
+                    <div class="flex items-start p-3 ${bgColor} rounded-lg text-sm border border-gray-200">
+                        <i data-feather="${icon}" class="w-4 h-4 mt-0.5 mr-3 text-gray-600 flex-shrink-0"></i>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">${activity.description}</p>
+                            <p class="text-xs text-gray-500">${activity.timestamp}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            feather.replace();
+        }
+
+        /** Filters and renders the user list into the database table. */
+        function renderDatabase(users) {
+            const tableBody = document.getElementById('userDatabaseTable');
+            tableBody.innerHTML = ''; 
+
+            let filteredUsers = users;
+            
+            // 1. Filter by Role
+            if (currentRoleFilter !== 'all') {
+                filteredUsers = filteredUsers.filter(user => user.role === currentRoleFilter);
+            }
+
+            // 2. Filter by Search Term (Now includes user.meta for course/faculty search)
+            if (currentSearchTerm) {
+                const term = currentSearchTerm.toLowerCase();
+                filteredUsers = filteredUsers.filter(user => 
+                    user.name.toLowerCase().includes(term) || 
+                    user.email.toLowerCase().includes(term) ||
+                    user.meta.toLowerCase().includes(term)
+                );
+            }
+            
+            if (filteredUsers.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-gray-400 italic">No users found matching the criteria.</td></tr>`;
+                return;
+            }
+
+            filteredUsers.forEach(user => {
+                let roleIcon, roleColor, statusText, statusColor;
+                
+                if (user.role === 'admin') { 
+                    roleIcon = 'monitor'; roleColor = 'text-red-600 bg-red-100'; 
+                    statusText = 'Admin'; statusColor = 'bg-red-100 text-red-800';
+                }
+                else if (user.role === 'teacher') { 
+                    roleIcon = 'briefcase'; roleColor = 'text-yellow-600 bg-yellow-100'; 
+                    statusText = user.status.charAt(0).toUpperCase() + user.status.slice(1);
+                    if (user.status === 'active') { statusColor = 'bg-green-100 text-green-800'; }
+                    else if (user.status === 'pending') { statusColor = 'bg-yellow-100 text-yellow-800'; }
+                    else { statusColor = 'bg-red-100 text-red-800'; }
+                }
+                else { // Student
+                    roleIcon = 'user'; roleColor = 'text-green-600 bg-green-100'; 
+                    statusText = 'Active'; 
+                    statusColor = 'bg-green-100 text-green-800';
+                }
+                
+                // NEW: Delete button logic
+                const deleteButton = user.role !== 'admin' ? 
+                                `<button onclick="deleteUser(${user.id}, '${user.role}', '${user.name}')" class="text-red-500 hover:text-red-700 font-medium">Delete</button>` 
+                                : '';
+
+                const row = `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-5 py-4 border-b border-gray-200">
+                            <span class="inline-flex items-center justify-center px-2.5 py-1.5 rounded-full ${roleColor} text-xs font-medium">
+                                <i data-feather="${roleIcon}" class="w-3 h-3 mr-1"></i> ${user.role.toUpperCase()}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 text-sm font-medium text-gray-900">${user.name}</td>
+                        <td class="px-5 py-4 border-b border-gray-200 text-sm text-gray-500">${user.email}</td>
+                        <td class="px-5 py-4 border-b border-gray-200 text-sm text-gray-500">
+                            <span class="font-medium text-gray-800">${user.meta}</span>
+                            ${user.role === 'teacher' ? 
+                                `<br><span class="inline-flex items-center px-2.5 py-0.5 mt-1 rounded-full text-xs font-medium ${statusColor}">(${statusText})</span>` 
+                                : ''}
+                        </td>
+                        <td class="px-5 py-4 border-b border-gray-200 text-sm text-right space-x-2">
+                            <button onclick="editUser(${user.id}, '${user.role}')" class="text-blue-500 hover:text-blue-700 font-medium">Edit</button>
+                            ${deleteButton}
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+            feather.replace(); // Re-initialize icons
+        }
+        
+        /** Sends an API request to update a teacher's status. */
+        async function updateTeacherStatus(teacherId, status, name) {
+            Swal.fire({
+                title: `Are you sure?`,
+                text: `You are about to set ${name}'s account status to ${status.toUpperCase()}.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: status === 'active' ? '#10B981' : '#EF4444',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: status === 'active' ? 'Yes, Approve' : 'Yes, Deny'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/admin/teacher-status`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ teacherId, status })
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            Swal.fire('Success!', `${name} account status updated to ${status}.`, 'success');
+                            // Refresh all data
+                            fetchRequests(); 
+                            fetchDatabase(); 
+                            fetchDashboardStats(); 
+                        } else {
+                            Swal.fire('Failed', data.message || 'Could not update status.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Update Status Error:', error);
+                        Swal.fire('Error', 'Connection failed while updating status.', 'error');
+                    }
+                }
+            });
+        }
+
+// -------------------------------------------------------------
+// Admin Delete User Function
+// -------------------------------------------------------------
+        async function deleteUser(id, role, name) {
+            Swal.fire({
+                title: `Remove ${role.toUpperCase()}?`,
+                text: `Are you sure you want to permanently remove ${name} from the system? This action cannot be undone.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Remove It'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/admin/delete-user`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id, role })
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            Swal.fire('Removed!', `${name} has been successfully removed.`, 'success');
+                            // Refresh all data
+                            fetchRequests(); 
+                            fetchDatabase(); 
+                            fetchDashboardStats(); 
+                        } else {
+                            Swal.fire('Failed', data.message || 'Could not remove user.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Delete User Error:', error);
+                        Swal.fire('Error', 'Connection failed while removing user.', 'error');
+                    }
+                }
+            });
+        }
+
+        
+// --- ANALYTICS CHART LOGIC (Enhanced for number display) ---
+
+        /** Fetches data and renders the user distribution chart. */
+        async function renderAnalyticsChart() {
+            const container = document.getElementById('chart-container');
+            // Clear container first
+            container.innerHTML = `<canvas id="userDistributionChart"></canvas>`; 
+            const ctx = document.getElementById('userDistributionChart');
+
+            // Destroy existing chart instance if it exists
+            if (userChartInstance) {
+                userChartInstance.destroy();
+            }
+
+            try {
+                const [teachersRes, studentsRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/admin/teachers`),
+                    fetch(`${API_BASE_URL}/api/admin/students`)
+                ]);
+                
+                const [teachersData, studentsData] = await Promise.all([
+                    teachersRes.json(),
+                    studentsRes.json()
+                ]);
+
+                const totalStudents = studentsData.students ? studentsData.students.length : 0;
+                // Only count active and admin teachers for a meaningful "in-system" count, excluding pending
+                const totalFaculty = teachersData.teachers ? teachersData.teachers.filter(t => t.status === 'active' || t.email === 'admin@ieti.edu.ph').length : 0;
+                
+                const totalUsers = totalStudents + totalFaculty;
+
+                if (totalUsers === 0) {
+                    container.innerHTML = `<p class="text-gray-500 italic">No user data available to generate the chart.</p>`;
+                    return;
+                }
+
+                userChartInstance = new Chart(ctx, {
+                    type: 'pie', // Using Pie Chart
+                    data: {
+                        labels: ['Students', 'Faculty'],
+                        datasets: [{
+                            label: 'User Count',
+                            data: [totalStudents, totalFaculty],
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.8)', // Blue for Students
+                                'rgba(16, 185, 129, 0.8)'  // Green for Faculty
+                            ],
+                            borderColor: [
+                                'rgb(59, 130, 246)',
+                                'rgb(16, 185, 129)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        size: 14
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const percentage = ((value / totalUsers) * 100).toFixed(1);
+                                        // Display both count and percentage clearly
+                                        return `${label}: ${value} users (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Add a detail box below the chart to show total numbers (as requested "add numbers on the side")
+                const detailBox = document.createElement('div');
+                detailBox.className = 'mt-4 space-y-2 text-center border-t pt-4';
+                detailBox.innerHTML = `
+                    <p class="text-base font-bold text-gray-800">Total Active Users: ${totalUsers}</p>
+                    <p class="text-sm text-blue-600">Students: ${totalStudents}</p>
+                    <p class="text-sm text-green-600">Faculty (Active & Admin): ${totalFaculty}</p>
+                `;
+                container.appendChild(detailBox);
+
+            } catch (error) {
+                console.error('Fetch Analytics Data Error:', error);
+                container.innerHTML = `<p class="text-red-500 italic">Error connecting to the server to fetch analytics data.</p>`;
+            }
+        }
+
+// -------------------------------------------------------------
+// Admin User Creation Modal
+// -------------------------------------------------------------
+        function createNewUser() {
+            // Re-uses the common form structure
+            const formHtml = generateUserFormHtml();
+            
+            Swal.fire({
+                title: 'Add New User',
+                html: formHtml,
+                showCancelButton: true,
+                confirmButtonText: 'Create Account',
+                confirmButtonColor: '#10B981',
+                focusConfirm: false,
+                didOpen: () => {
+                    // Initialize the role dropdown and student fields logic
+                    window.toggleStudentFields = setupStudentFieldsToggle('admin-new-role', 'student-fields', 'admin-new-course', 'admin-new-year');
+                    toggleStudentFields(); 
+                },
+                preConfirm: () => {
+                    return validateAndCollectFormData('admin-new');
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    sendNewUserToAPI(result.value);
+                }
+            });
+        }
+
+        async function sendNewUserToAPI(userData) {
+            Swal.fire({
+                title: 'Creating Account...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/register-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire('Success!', data.message, 'success');
+                    // Refresh all data
+                    fetchRequests(); 
+                    fetchDatabase(); 
+                    fetchDashboardStats(); 
+                } else {
+                    Swal.fire('Failed', data.message || 'Server error during creation.', 'error');
+                }
+            } catch (error) {
+                console.error('Admin Register User Error:', error);
+                Swal.fire('Error', 'Connection failed while creating user.', 'error');
+            }
+        }
+
+// -------------------------------------------------------------
+// NEW: Admin Edit User Modal & API Call
+// -------------------------------------------------------------
+
+        /**
+         * Opens a pre-filled modal to edit an existing user's details.
+         */
+        function editUser(id, role) {
+            const userToEdit = allUsers.find(u => u.id === id && u.role === role);
+            if (!userToEdit) {
+                Swal.fire('Error', 'User data not found in local cache.', 'error');
+                return;
+            }
+
+            // Generate form using a unique prefix for fields
+            const formHtml = generateUserFormHtml('admin-edit');
+            
+            Swal.fire({
+                title: `Edit ${role.toUpperCase()} Account`,
+                html: formHtml,
+                showCancelButton: true,
+                confirmButtonText: 'Save Changes',
+                confirmButtonColor: '#2563EB',
+                focusConfirm: false,
+                didOpen: () => {
+                    // 1. Setup Student Fields Logic
+                    window.toggleStudentFields = setupStudentFieldsToggle('admin-edit-role', 'student-fields', 'admin-edit-course', 'admin-edit-year');
+                    
+                    // 2. Pre-fill Fields
+                    document.getElementById('admin-edit-role').value = userToEdit.role;
+                    document.getElementById('admin-edit-name').value = userToEdit.name;
+                    document.getElementById('admin-edit-email').value = userToEdit.email;
+                    // NOTE: Password field is intentionally left blank. 
+                    // The user must manually type a new password to change it.
+                    // If left blank, the API should ignore the password field.
+
+                    // 3. Handle Student Fields
+                    if (role === 'student') {
+                        document.getElementById('admin-edit-course').value = userToEdit.course || '';
+                        document.getElementById('admin-edit-year').value = userToEdit.year_level || '';
+                    }
+                    
+                    // 4. Run the toggle function to show/hide the relevant student fields
+                    toggleStudentFields();
+
+                    // Disable role selection (role is part of the WHERE clause and table name)
+                    document.getElementById('admin-edit-role').setAttribute('disabled', 'disabled');
+                    document.getElementById('admin-edit-role').style.backgroundColor = '#f3f4f6';
+                },
+                preConfirm: () => {
+                    // Pass the original ID and the 'edit' prefix to the validation function
+                    return validateAndCollectFormData('admin-edit', userToEdit.id);
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Send the collected, validated data (including ID)
+                    sendUpdateToAPI(result.value);
+                }
+            });
+        }
+        
+        /**
+         * Sends collected form data to the backend update API.
+         * Note: Re-uses the same input names but hits a different API endpoint.
+         */
+        async function sendUpdateToAPI(userData) {
+            Swal.fire({
+                title: 'Saving Changes...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                // Determine meta data for students
+                let payload = {
+                    id: userData.id,
+                    role: userData.role,
+                    full_name: userData.full_name,
+                    email: userData.email,
+                };
+
+                // Add optional password if provided
+                if (userData.password) {
+                    payload.password = userData.password;
+                }
+
+                if (userData.role === 'student') {
+                    // Map student fields to meta1, meta2 for the general update endpoint
+                    payload.meta1 = userData.course;
+                    payload.meta2 = userData.year_level;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/admin/update-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire('Success!', data.message, 'success');
+                    // Refresh all data
+                    fetchRequests(); 
+                    fetchDatabase(); 
+                    fetchDashboardStats(); 
+                } else {
+                    Swal.fire('Failed', data.message || 'Server error during update.', 'error');
+                }
+            } catch (error) {
+                console.error('Admin Update User Error:', error);
+                Swal.fire('Error', 'Connection failed while saving changes.', 'error');
+            }
+        }
+
+        // --- COMMON MODAL UTILITY FUNCTIONS ---
+        
+        /** Generates the HTML form structure for user creation/editing. */
+        function generateUserFormHtml(prefix = 'admin-new') {
+            return `
+                <div class="text-left space-y-4">
+                    <div class="mb-4">
+                        <label for="${prefix}-role" class="block text-sm font-medium text-gray-700">Role</label>
+                        <select id="${prefix}-role" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" onchange="toggleStudentFields()">
+                            <option value="teacher">Faculty / Teacher</option>
+                            <option value="student">Student</option>
+                            <option value="admin">Admin (Superuser)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="${prefix}-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                        <input type="text" id="${prefix}-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                    </div>
+
+                    <div>
+                        <label for="${prefix}-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                        <input type="email" id="${prefix}-email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                    </div>
+                    
+                    <div>
+                        <label for="${prefix}-password" class="block text-sm font-medium text-gray-700">${prefix === 'admin-edit' ? 'New Password (Leave blank to keep old password)' : 'Password'}</label>
+                        <input type="password" id="${prefix}-password" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" ${prefix === 'admin-new' ? 'required' : ''}>
+                    </div>
+                    
+                    <div id="student-fields" class="hidden space-y-4 pt-2 border-t border-dashed mt-4">
+                        <div>
+                            <label for="${prefix}-course" class="block text-sm font-medium text-gray-700">Course</label>
+                            <input type="text" id="${prefix}-course" placeholder="e.g., BSIT, BSHM" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                        </div>
+                        <div>
+                            <label for="${prefix}-year" class="block text-sm font-medium text-gray-700">Year Level</label>
+                            <select id="${prefix}-year" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                                <option value="" disabled selected>Select Year Level</option>
+                                <option value="1st Year">1st Year</option>
+                                <option value="2nd Year">2nd Year</option>
+                                <option value="3rd Year">3rd Year</option>
+                                <option value="4th Year">4th Year</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /** Creates the function that toggles visibility of student-specific fields. */
+        function setupStudentFieldsToggle(roleId, fieldsId, courseId, yearId) {
+            return () => {
+                const role = document.getElementById(roleId).value;
+                const studentFields = document.getElementById(fieldsId);
+                
+                // Get the specific field elements
+                const courseInput = document.getElementById(courseId);
+                const yearSelect = document.getElementById(yearId);
+
+                if (role === 'student') {
+                    studentFields.classList.remove('hidden');
+                    // Mark as required for validation
+                    if(courseInput) courseInput.setAttribute('required', 'required');
+                    if(yearSelect) yearSelect.setAttribute('required', 'required');
+                } else {
+                    studentFields.classList.add('hidden');
+                    // Remove required status if not a student
+                    if(courseInput) courseInput.removeAttribute('required');
+                    if(yearSelect) yearSelect.removeAttribute('required');
+                }
+            };
+        }
+        
+        /** Validates and collects form data from the modal. */
+        function validateAndCollectFormData(prefix, id = null) {
+            const role = document.getElementById(`${prefix}-role`).value;
+            const name = document.getElementById(`${prefix}-name`).value.trim();
+            const email = document.getElementById(`${prefix}-email`).value.trim();
+            const password = document.getElementById(`${prefix}-password`).value.trim();
+            const course = document.getElementById(`${prefix}-course`).value.trim();
+            const year_level = document.getElementById(`${prefix}-year`).value;
+
+            // Basic validation
+            if (!role || !name || !email) {
+                Swal.showValidationMessage('Please fill in Name and Email.');
+                return false;
+            }
+            // Password validation (required for NEW, optional for EDIT)
+            if (prefix === 'admin-new' && !password) {
+                 Swal.showValidationMessage('Please provide a Password.');
+                return false;
+            }
+            
+            // Student-specific validation
+            if (role === 'student' && (!course || !year_level)) {
+                Swal.showValidationMessage('Student role requires Course and Year Level.');
+                return false;
+            }
+
+            // Return collected data
+            const data = { role, full_name: name, email, password, course, year_level };
+            if (id !== null) {
+                data.id = id;
+            }
+            return data;
+        }
+
+
+        // --- FILTERING & SEARCHING LOGIC ---
+        function setFilter(role) {
+            currentRoleFilter = role;
+            updateFilterButtons(role);
+            renderDatabase(allUsers); // Re-render the existing data
+        }
+
+        function updateFilterButtons(activeFilter) {
+            const buttons = ['all', 'student', 'teacher', 'admin'];
+            buttons.forEach(role => {
+                const btn = document.getElementById(`filter-${role}`);
+                if (btn) {
+                    if (role === activeFilter) {
+                        btn.className = 'px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500';
+                    } else {
+                        btn.className = 'px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50';
+                    }
+                }
+            });
+        }
+        
+        document.getElementById('searchByName').addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value.trim();
+            renderDatabase(allUsers);
+        });
+
+        // --- UTILITY FUNCTION REMOVED (no longer needed) ---
+        // The old showAlert(f) function has been removed as the Edit functionality is now live.
+
+        // Initialize the view on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Start by showing the dashboard and fetching initial stats
+            switchTab('dashboard'); 
+            feather.replace();
+        });
+    </script>
+</body>
+</html>

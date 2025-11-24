@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | IETI EduTrack</title>
+    <link rel="icon" type="image/x-icon" href="../static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <style>
+        /* Theme Styles */
+        .gradient-bg { background: linear-gradient(135deg, #006400 0%, #4CAF50 100%); }
+        .sidebar { background-color: #004d00; min-height: 100vh; }
+        .nav-link { transition: all 0.3s ease; }
+        .nav-link.active { background-color: #006400; border-left: 4px solid #FFD700; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06); }
+        
+        /* Background Logo Overlay for Dashboard */
+        .dashboard-bg-logo-student { position: relative; z-index: 0; overflow-x: hidden; }
+        .dashboard-bg-logo-student::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('../static/ieti-logo.png'); background-repeat: no-repeat;
+            background-position: center; background-size: 50%; opacity: 0.08; z-index: -1; pointer-events: none;
+        }
+        
+        /* Background Logo Overlay for Settings Modal */
+        .settings-modal-bg {
+            position: relative !important;
+            overflow: hidden !important;
+            background-color: rgba(255, 255, 255, 0.98) !important;
+        }
+        .settings-modal-bg::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('../static/ieti-logo.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 40%;
+            opacity: 0.12; /* Subtle watermark */
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        /* Grade Status Styles */
+        .grade-released { color: #047857; font-weight: bold; }
+        .grade-locked { color: #6B7280; }
+        .status-badge-passed { background-color: #D1FAE5; color: #065F46; }
+        .status-badge-failed { background-color: #FEE2E2; color: #991B1B; }
+        .status-badge-pending { background-color: #FEF3C7; color: #92400E; }
+        
+        /* Custom Select for Settings Modal */
+        .custom-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; -webkit-appearance: none; appearance: none;
+        }
+
+        /* Tab Styles */
+        .grade-tab { transition: all 0.3s ease; }
+        .grade-tab.active { 
+            border-bottom: 3px solid #047857;
+            font-weight: 600;
+            color: #047857;
+        }
+    </style>
+</head>
+<body class="flex bg-gray-100">
+
+    <div class="sidebar text-white w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out z-30" id="sidebar">
+        <div class="text-white flex items-center px-4">
+            <img src="../static/ieti-logo.png" alt="IETI Logo" class="w-10 h-10 mr-3">
+            <span class="text-2xl font-extrabold tracking-wider">EduTrack</span>
+        </div>
+
+        <nav>
+            <a href="#" class="nav-link active block py-3 px-4 flex items-center space-x-2 text-sm font-medium hover:bg-green-700 transition duration-200">
+                <i data-feather="grid" class="w-5 h-5"></i><span>Dashboard</span>
+            </a>
+            
+            <a href="javascript:void(0)" onclick="openSettingsModal()" class="nav-link block py-3 px-4 flex items-center space-x-2 text-sm font-medium hover:bg-green-700 transition duration-200">
+                <i data-feather="settings" class="w-5 h-5"></i><span>Settings</span>
+            </a>
+            <a href="../index.html" class="nav-link block py-3 px-4 flex items-center space-x-2 text-sm font-medium text-red-300 hover:bg-green-700 hover:text-red-100 transition duration-200 mt-8">
+                <i data-feather="log-out" class="w-5 h-5"></i><span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <div class="flex-1 flex flex-col">
+        <header class="w-full bg-white shadow-md z-10">
+            <div class="flex items-center justify-between px-6 py-4">
+                <button id="menu-toggle" class="text-gray-500 focus:outline-none md:hidden">
+                    <i data-feather="menu" class="w-6 h-6"></i>
+                </button>
+                <h1 class="text-xl font-semibold text-gray-800">Student Dashboard</h1>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm font-medium text-gray-700 hidden sm:block" id="header-name">Juan C. Dela Cruz</span> 
+                    <i data-feather="user" class="w-6 h-6 text-green-700"></i>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 p-6 space-y-6 overflow-y-auto dashboard-bg-logo-student">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <div class="md:col-span-2 bg-white p-6 rounded-lg card-shadow">
+                    <div class="flex items-center space-x-4 mb-4">
+                         <i data-feather="award" class="w-10 h-10 text-yellow-500"></i>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800" id="welcome-msg">Welcome back, Juan!</h2>
+                            <p class="text-gray-500" id="profile-subtitle">Loading Profile...</p>
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-700">
+                        <p><span class="font-semibold">Email:</span> <span id="profile-email">...</span></p>
+                        <p><span class="font-semibold">Academic Year:</span> 2024-2025</p>
+                        <p><span class="font-semibold">Semester:</span> <span id="semester-display">...</span></p> 
+                        <p><span class="font-semibold">Student ID:</span> <span id="student-id">...</span></p>
+                    </div>
+                </div>
+
+                <div class="md:col-span-1 bg-white p-6 rounded-lg card-shadow flex flex-col items-center justify-center text-center">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Attendance QR Code</h3>
+                    <div id="student-qr-placeholder" class="w-40 h-40 bg-gray-50 p-2 rounded-lg shadow-inner border-2 border-green-500">
+                        <p class="text-xs text-gray-500 text-center font-semibold">Loading QR...</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Show this to the teacher to mark your attendance.</p>
+                    
+                    <button onclick="scanSubjectQR()" class="mt-4 w-full gradient-bg text-white py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity flex items-center justify-center">
+                        <i data-feather="camera" class="w-5 h-5 mr-2"></i>
+                        <span>Scan Subject QR</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="enrolled-subjects" class="bg-white p-6 rounded-lg card-shadow">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i data-feather="book-open" class="w-6 h-6 text-green-600"></i>
+                    <span>My Enrolled Subjects</span>
+                </h3>
+                
+                <!-- Grade Period Tabs -->
+                <div class="flex border-b border-gray-200 mb-4">
+                    <button class="grade-tab active px-4 py-2 text-gray-600 hover:text-green-700 transition" onclick="switchGradePeriod('PRELIM')">Prelim</button>
+                    <button class="grade-tab px-4 py-2 text-gray-600 hover:text-green-700 transition" onclick="switchGradePeriod('MIDTERM')">Midterm</button>
+                    <button class="grade-tab px-4 py-2 text-gray-600 hover:text-green-700 transition" onclick="switchGradePeriod('FINALS')">Finals</button>
+                </div>
+                
+                <ul class="divide-y divide-gray-200" id="subject-list">
+                    <li class="py-4 text-center text-gray-500">Loading subjects...</li>
+                </ul>
+            </div>
+
+            <!-- Grade Summary Section -->
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i data-feather="bar-chart-2" class="w-6 h-6 text-green-600"></i>
+                    <span>Grade Summary</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="grade-summary">
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" id="avg-grade">--</div>
+                        <p class="text-sm text-gray-600">Average Grade</p>
+                    </div>
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" id="passed-count">--</div>
+                        <p class="text-sm text-gray-600">Subjects Passed</p>
+                    </div>
+                    <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                        <div class="text-2xl font-bold text-yellow-600" id="released-count">--</div>
+                        <p class="text-sm text-gray-600">Grades Released</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        feather.replace();
+
+        // --- MOCK DATA ---
+        // Configurable Student Info
+        const mockStudentInfo = {
+            studentId: '2021-00001',
+            name: 'Juan C. Dela Cruz',
+            course: 'BSIT',       
+            yearLevel: '4th Year',
+            semester: 'Second Semester',
+            email: 'juan.cruz@ieti.edu.ph',
+            enrolledSubjects: ['IT 401', 'IT 402', 'GE 105'] 
+        };
+
+        // Subject Data (Grades, Attendance, Release Status) - SYNCED WITH TEACHER SIDE
+        const mockStudentData = {
+            grades: [
+                { 
+                    code: 'IT 401', 
+                    name: 'Web Development', 
+                    teacher: 'Prof. Mark D. Peñas',
+                    schedule: 'M/W 1:00 PM',
+                    releaseStatus: { PRELIM: true, MIDTERM: false, FINALS: false }, // SYNCED
+                    grades: { 
+                        PRELIM: { ALL: 92, QUIZ: 95, EXAM: 90, 'CLASS STANDING': 91, status: 'PASSED' },
+                        MIDTERM: { ALL: 90, QUIZ: 92, EXAM: 88, 'CLASS STANDING': 90, status: 'PASSED' },
+                        FINALS: { ALL: 93, QUIZ: 95, EXAM: 92, 'CLASS STANDING': 92, status: 'PASSED' }
+                    },
+                    quizzes: [{ name: 'Quiz 1: HTML', score: 95 }, { name: 'Quiz 2: CSS', score: 88 }],
+                    exams: [{ name: 'Prelim Exam', score: 92 }, { name: 'Midterm Exam', score: 90 }],
+                    projects: [{ name: 'Personal Website', score: 95 }],
+                    attendance: { present: 18, absent: 2, tardy: 1, total: 21, rate: '85.7%' },
+                    missing: []
+                },
+                { 
+                    code: 'IT 402', 
+                    name: 'Networking 2', 
+                    teacher: 'Prof. Kris M. Zamora',
+                    schedule: 'T/Th 8:00 AM',
+                    releaseStatus: { PRELIM: true, MIDTERM: true, FINALS: false }, // SYNCED
+                    grades: { 
+                        PRELIM: { ALL: 86.5, QUIZ: 82, EXAM: 85, 'CLASS STANDING': 88, status: 'PASSED' },
+                        MIDTERM: { ALL: 88, QUIZ: 85, EXAM: 87, 'CLASS STANDING': 90, status: 'PASSED' },
+                        FINALS: { ALL: 0, QUIZ: 0, EXAM: 0, 'CLASS STANDING': 0, status: 'PENDING' }
+                    },
+                    attendance: { rate: '100%' },
+                    missing: []
+                },
+                { 
+                    code: 'GE 105', 
+                    name: 'Ethics in IT', 
+                    teacher: 'Prof. Ana T. Dela Torre',
+                    schedule: 'Fri 3:00 PM',
+                    releaseStatus: { PRELIM: false, MIDTERM: false, FINALS: false }, // SYNCED
+                    grades: { 
+                        PRELIM: { ALL: 0, QUIZ: 0, EXAM: 0, 'CLASS STANDING': 0, status: 'PENDING' },
+                        MIDTERM: { ALL: 0, QUIZ: 0, EXAM: 0, 'CLASS STANDING': 0, status: 'PENDING' },
+                        FINALS: { ALL: 0, QUIZ: 0, EXAM: 0, 'CLASS STANDING': 0, status: 'PENDING' }
+                    },
+                    quizzes: [{ name: 'Quiz 1: Privacy', score: 90 }],
+                    exams: [], projects: [],
+                    attendance: { rate: '90%' },
+                    missing: {
+                        quizzes: ['Quiz 3: IP Law'],
+                        exams: ['Final Exam'],
+                        activities: ['Case Study 2']
+                    }
+                },
+            ]
+        };
+
+        let currentGradePeriod = 'PRELIM';
+
+        // --- CORE DISPLAY FUNCTIONS ---
+
+        function updateProfileDisplay() {
+            document.getElementById('header-name').textContent = mockStudentInfo.name;
+            document.getElementById('welcome-msg').textContent = `Welcome back, ${mockStudentInfo.name.split(' ')[0]}!`;
+            document.getElementById('profile-subtitle').textContent = `${mockStudentInfo.yearLevel} - ${mockStudentInfo.course}`;
+            document.getElementById('profile-email').textContent = mockStudentInfo.email;
+            document.getElementById('semester-display').textContent = mockStudentInfo.semester;
+            document.getElementById('student-id').textContent = mockStudentInfo.studentId;
+        }
+
+        function switchGradePeriod(period) {
+            currentGradePeriod = period;
+            
+            // Update tab styling
+            document.querySelectorAll('.grade-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderEnrolledSubjects();
+            updateGradeSummary();
+        }
+
+        function renderEnrolledSubjects() {
+            const list = document.getElementById('subject-list');
+            
+            // Filter subjects based on the student's current enrollment
+            const subjectsToDisplay = mockStudentData.grades.filter(subject => 
+                mockStudentInfo.enrolledSubjects.includes(subject.code)
+            );
+
+            if (subjectsToDisplay.length === 0) {
+                list.innerHTML = `
+                    <li class="py-8 text-center flex flex-col items-center justify-center text-gray-500">
+                        <i data-feather="folder-minus" class="w-12 h-12 mb-3 text-gray-300"></i>
+                        <p class="font-medium">No subjects enrolled for this semester.</p>
+                        <p class="text-sm">Scan a subject QR code to begin enrollment.</p>
+                    </li>`;
+                feather.replace();
+                return;
+            }
+
+            list.innerHTML = subjectsToDisplay.map(subject => {
+                const isReleased = subject.releaseStatus[currentGradePeriod];
+                const gradeData = subject.grades[currentGradePeriod];
+                const gradeValue = gradeData.ALL;
+                const status = gradeData.status;
+                
+                // Handle Release Status - SYNCED WITH TEACHER SIDE
+                let gradeDisplay, gradeColor, statusBadge, statusClass, releaseIcon;
+                
+                if (isReleased) {
+                    if (gradeValue > 0) {
+                        gradeDisplay = gradeValue.toFixed(2);
+                        gradeColor = gradeValue >= 75 ? 'text-green-600' : 'text-red-600';
+                        statusClass = gradeValue >= 75 ? 'status-badge-passed' : 'status-badge-failed';
+                        statusBadge = gradeValue >= 75 ? 'PASSING' : 'FAILING';
+                        releaseIcon = '<i data-feather="eye" class="w-4 h-4 text-green-600 mr-1"></i>';
+                    } else {
+                        gradeDisplay = 'N/A';
+                        gradeColor = 'text-yellow-600';
+                        statusClass = 'status-badge-pending';
+                        statusBadge = 'PENDING';
+                        releaseIcon = '<i data-feather="clock" class="w-4 h-4 text-yellow-600 mr-1"></i>';
+                    }
+                } else {
+                    gradeDisplay = '<i data-feather="lock" class="w-5 h-5 inline text-gray-400"></i>';
+                    gradeColor = 'text-gray-400';
+                    statusClass = 'status-badge-pending';
+                    statusBadge = 'LOCKED';
+                    releaseIcon = '<i data-feather="lock" class="w-4 h-4 text-gray-400 mr-1"></i>';
+                }
+
+                const hasMissing = Object.values(subject.missing || {}).flat().length > 0;
+                const arrowColor = hasMissing ? 'text-red-500' : 'text-gray-400';
+                const missingIndicator = hasMissing ? '<span class="text-red-500 text-xs font-bold ml-2">(Action Required)</span>' : '';
+
+                return `
+                    <li class="py-5 flex justify-between items-center hover:bg-gray-50 transition-colors px-4 rounded-lg cursor-pointer" 
+                        onclick="showSubjectDetails('${subject.code}')">
+                        
+                        <div class="flex items-center space-x-4 flex-1">
+                            <div class="flex-1">
+                                <p class="font-bold text-gray-900 text-xl">${subject.code} - ${subject.name}</p>
+                                <p class="text-base text-gray-500 mt-1">Instructor: ${subject.teacher} ${missingIndicator}</p>
+                                <div class="flex items-center mt-2">
+                                    ${releaseIcon}
+                                    <span class="text-xs ${statusClass} px-2 py-1 rounded-full font-medium">${statusBadge}</span>
+                                    <span class="text-xs text-gray-500 ml-2">${currentGradePeriod}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500">${currentGradePeriod} Grade</p>
+                            <span class="text-2xl font-extrabold ${gradeColor}">${gradeDisplay}</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <i data-feather="chevron-right" class="w-6 h-6 ${arrowColor}"></i>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+            feather.replace();
+            updateGradeSummary();
+        }
+
+        function updateGradeSummary() {
+            const subjectsToDisplay = mockStudentData.grades.filter(subject => 
+                mockStudentInfo.enrolledSubjects.includes(subject.code)
+            );
+
+            let totalGrade = 0;
+            let gradeCount = 0;
+            let passedCount = 0;
+            let releasedCount = 0;
+
+            subjectsToDisplay.forEach(subject => {
+                const isReleased = subject.releaseStatus[currentGradePeriod];
+                const gradeValue = subject.grades[currentGradePeriod].ALL;
+                
+                if (isReleased && gradeValue > 0) {
+                    totalGrade += gradeValue;
+                    gradeCount++;
+                    if (gradeValue >= 75) passedCount++;
+                }
+                if (isReleased) releasedCount++;
+            });
+
+            const avgGrade = gradeCount > 0 ? (totalGrade / gradeCount).toFixed(2) : '--';
+            
+            document.getElementById('avg-grade').textContent = avgGrade;
+            document.getElementById('passed-count').textContent = `${passedCount}/${subjectsToDisplay.length}`;
+            document.getElementById('released-count').textContent = `${releasedCount}/${subjectsToDisplay.length}`;
+        }
+
+        // --- DETAILED VIEW & VISUALIZATION ---
+
+        function showSubjectDetails(subjectCode) {
+            const subject = mockStudentData.grades.find(s => s.code === subjectCode);
+            const isReleased = subject.releaseStatus[currentGradePeriod];
+            
+            // Release Check - SYNCED WITH TEACHER SIDE
+            if (!isReleased) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Grades Locked',
+                    html: `
+                        <div class="text-left">
+                            <p>The instructor has not yet released the ${currentGradePeriod.toLowerCase()} grades for this subject.</p>
+                            <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                <p class="text-sm text-yellow-800 flex items-center">
+                                    <i data-feather="lock" class="w-4 h-4 mr-2"></i>
+                                    <strong>Status:</strong> Grades are currently hidden
+                                </p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Please check back later or contact your instructor.</p>
+                        </div>
+                    `,
+                    confirmButtonColor: '#006400'
+                });
+                return;
+            }
+
+            const gradeData = subject.grades[currentGradePeriod];
+            const missingAlertsHtml = renderMissingAlerts(subject.missing);
+            
+            const htmlContent = `
+                <div class="text-left p-2 space-y-5">
+                    ${missingAlertsHtml}
+                    
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                        <p class="text-green-800 font-semibold flex items-center">
+                            <i data-feather="check-circle" class="w-4 h-4 mr-2"></i>
+                            ${currentGradePeriod} Grades Released
+                        </p>
+                    </div>
+                    
+                    <h4 class="text-lg font-bold text-gray-800 border-b pb-1">Grading Period Summary - ${currentGradePeriod}</h4>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="p-3 ${gradeData.ALL >= 75 ? 'bg-green-50' : 'bg-red-50'} rounded-lg border ${gradeData.ALL >= 75 ? 'border-green-200' : 'border-red-200'}">
+                            <p class="text-xs text-gray-500">Final Grade</p>
+                            <p class="text-xl font-bold ${gradeData.ALL >= 75 ? 'text-green-600' : 'text-red-600'}">${gradeData.ALL.toFixed(2)}</p>
+                            <p class="text-xs ${gradeData.ALL >= 75 ? 'text-green-600' : 'text-red-600'}">${gradeData.status}</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <p class="text-xs text-gray-500">Quizzes</p>
+                            <p class="text-xl font-bold text-gray-700">${gradeData.QUIZ}</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <p class="text-xs text-gray-500">Exams</p>
+                            <p class="text-xl font-bold text-gray-700">${gradeData.EXAM}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        ${renderScoreDetails(subject.code, 'quizzes', 'Quizzes', subject.quizzes, subject.missing.quizzes || [], 'check-circle')}
+                        ${renderScoreDetails(subject.code, 'exams', 'Exams', subject.exams, subject.missing.exams || [], 'clipboard')}
+                        ${renderScoreDetails(subject.code, 'projects', 'Projects', subject.projects, [], 'briefcase')}
+                    </div>
+                </div>
+            `;
+
+            Swal.fire({
+                title: `${subject.code} - ${subject.name}`,
+                html: htmlContent,
+                width: '600px',
+                showConfirmButton: true,
+                confirmButtonText: 'Close',
+                confirmButtonColor: '#006400',
+                didOpen: () => { feather.replace(); }
+            });
+        }
+
+        function renderScoreDetails(code, category, title, data, missing, icon) {
+            const combined = [...data, ...missing.map(m => ({ name: m, score: 'MISSING' }))];
+            if(combined.length === 0) return `<p class="text-sm text-gray-400 italic">No ${title} recorded.</p>`;
+            
+            const vizBtn = data.length > 0 ? 
+                `<button onclick="event.stopPropagation(); visualizeScores('${code}', '${category}', '${title}')" class="text-xs bg-blue-600 text-white px-3 py-1 rounded-full hover:bg-blue-700 flex items-center ml-auto shadow"><i data-feather="bar-chart-2" class="w-3 h-3 mr-1"></i>Visualize</button>` : '';
+
+            const rows = combined.map(i => `
+                <div class="flex justify-between py-2 border-b border-gray-100 text-sm ${i.score === 'MISSING' ? 'bg-red-50 text-red-700 px-2 rounded' : ''}">
+                    <span>${i.name}</span><span class="font-bold">${i.score}</span>
+                </div>`).join('');
+
+            return `
+                <details class="bg-white border rounded-lg p-3 group shadow-sm">
+                    <summary class="font-bold cursor-pointer flex justify-between items-center text-gray-700 list-none">
+                        <div class="flex items-center">
+                            <i data-feather="${icon}" class="w-4 h-4 mr-2 text-yellow-600"></i>
+                            ${title} (${combined.length})
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${vizBtn}
+                            <i data-feather="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200 group-open:rotate-180"></i>
+                        </div>
+                    </summary>
+                    <div class="mt-3 space-y-1">${rows}</div>
+                </details>`;
+        }
+
+        function visualizeScores(code, category, title) {
+            const subject = mockStudentData.grades.find(s => s.code === code);
+            const data = subject[category] || [];
+            
+            Swal.fire({
+                title: `${title} Performance`,
+                html: '<div style="height:300px"><canvas id="scoreChart"></canvas></div>',
+                width: 600,
+                confirmButtonColor: '#006400',
+                didOpen: () => {
+                    new Chart(document.getElementById('scoreChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: data.map(d => d.name),
+                            datasets: [{ label: 'Score', data: data.map(d => d.score), backgroundColor: '#4CAF50', borderRadius: 4 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+                    });
+                }
+            });
+        }
+
+        function renderMissingAlerts(missing) {
+            const count = Object.values(missing || {}).flat().length;
+            if(count === 0) return '';
+            return `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm mb-4 flex items-center text-red-800 font-bold"><i data-feather="alert-triangle" class="w-5 h-5 mr-3"></i>${count} Missing Item(s) Found! Check details below.</div>`;
+        }
+
+        // --- SETTINGS WIZARD (Database Reset Logic) ---
+        function openSettingsModal() {
+            const courses = ['BSIT', 'BSCS', 'BSCpe', 'BSBA'];
+            const years = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+            const semesters = ['First Semester', 'Second Semester', 'Summer Term'];
+            const genOpts = (opts, sel) => opts.map(o => `<option value="${o}" ${o === sel ? 'selected' : ''}>${o}</option>`).join('');
+
+            Swal.fire({
+                title: 'Setup New Term',
+                customClass: { popup: 'settings-modal-bg' },
+                html: `
+                    <div class="text-left space-y-4 p-2">
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-yellow-800">
+                            <b>Notice:</b> Saving changes will <span class="underline font-bold">reset</span> your enrolled subjects database.
+                        </div>
+                        <div><label class="block text-xs font-bold text-gray-600 mb-1">Semester</label><select id="setSem" class="w-full border p-2 rounded bg-white">${genOpts(semesters, mockStudentInfo.semester)}</select></div>
+                        <div><label class="block text-xs font-bold text-gray-600 mb-1">Course</label><select id="setCourse" class="w-full border p-2 rounded bg-white">${genOpts(courses, mockStudentInfo.course)}</select></div>
+                        <div><label class="block text-xs font-bold text-gray-600 mb-1">Year Level</label><select id="setYear" class="w-full border p-2 rounded bg-white">${genOpts(years, mockStudentInfo.yearLevel)}</select></div>
+                    </div>`,
+                showCancelButton: true,
+                confirmButtonText: 'Save & Start New Term',
+                confirmButtonColor: '#006400',
+                preConfirm: () => ({ sem: document.getElementById('setSem').value, course: document.getElementById('setCourse').value, year: document.getElementById('setYear').value })
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    mockStudentInfo.semester = res.value.sem;
+                    mockStudentInfo.course = res.value.course;
+                    mockStudentInfo.yearLevel = res.value.year;
+                    mockStudentInfo.enrolledSubjects = []; // RESET DATABASE
+                    updateProfileDisplay();
+                    renderEnrolledSubjects();
+                    updateGradeSummary();
+                    Swal.fire('New Term Started', 'Subject database cleared.', 'success');
+                }
+            });
+        }
+
+        // --- QR LOGIC (Attendance vs Enrollment) ---
+        function scanSubjectQR() {
+            const scannedSubject = 'IT 403'; // Mock scan
+            const isEnrolled = mockStudentInfo.enrolledSubjects.includes(scannedSubject);
+
+            if (isEnrolled) {
+                Swal.fire({ title: 'Attendance Request Sent', text: `Logged for ${scannedSubject}. Waiting for teacher validation.`, icon: 'success', confirmButtonColor: '#006400' });
+            } else {
+                Swal.fire({ title: 'Enrollment Request Sent', text: `You are not enrolled in ${scannedSubject}. An enrollment request has been sent to the teacher.`, icon: 'info', confirmButtonColor: '#006400' });
+            }
+        }
+
+        function generateQRCode() {
+            const qrPlaceholder = document.getElementById('student-qr-placeholder');
+            if (qrPlaceholder) {
+                qrPlaceholder.innerHTML = '';
+                QRCode.toCanvas(qrPlaceholder, `STUDENT|${mockStudentInfo.studentId}|${mockStudentInfo.name}`, { width: 150, color: { dark: '#004d00', light: '#ffffff' } });
+            }
+        }
+
+        function showAlert(feature) { 
+            Swal.fire({ 
+                title: feature, 
+                icon: 'info', 
+                confirmButtonColor: '#006400' 
+            }); 
+        }
+
+        document.getElementById('menu-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateProfileDisplay();
+            renderEnrolledSubjects();
+            updateGradeSummary();
+            generateQRCode();
+        });
+    </script>
+</body>
+</html>

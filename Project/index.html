@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IETI San Pedro Online Attendance System</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* MODIFIED: New background style applied to body */
+        body {
+            background-image: url('/static/background.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* KEPT: gradient-bg is still used for the navbar and button */
+        .gradient-bg {
+            background: linear-gradient(135deg, #006400 0%, #4CAF50 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+        /* Style for the active role button */
+        .role-button {
+            border: 1px solid #ddd;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+        .role-button.active {
+            background-color: #006400; /* Darker Green */
+            color: white;
+            border-color: #006400;
+        }
+        .login-hero {
+            /* Ensures hero section fills viewport height on mobile to center content */
+            min-height: calc(100vh - 72px); /* 72px is roughly the height of the navbar */
+            display: flex;
+            align-items: center;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        /* Center content vertically and horizontally within the hero */
+        .login-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen"> <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="/static/ieti-logo.png" alt="IETI College Logo" class="w-12 h-12">
+                    <span class="text-xl font-bold">IETI San Pedro College</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" class="hover:text-gray-200 transition-all">Home</a>
+                    <a href="#about-section" class="hover:text-gray-200 transition-all">About</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="teacher/register.html" class="px-4 py-2 bg-yellow-400 text-green-800 rounded-lg font-medium hover:bg-yellow-300 transition-all">Teacher Register</a>
+                    <a href="student/student-register.html" class="px-4 py-2 border border-white text-white rounded-lg font-medium hover:bg-white hover:text-green-800 transition-all">Student Register</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="text-white login-hero">
+        <div class="container mx-auto px-6 login-container">
+            <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl space-y-6">
+                
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">School Login</h2>
+                    <p class="text-sm text-gray-600">Please choose proper role.</p>
+                </div>
+                
+                <div class="flex justify-center space-x-4 mb-4" id="roleSelector">
+                    <button type="button" data-role="teacher" class="role-button w-1/2 py-2 rounded-lg font-medium transition-all">Teacher</button>
+                    <button type="button" data-role="student" class="role-button w-1/2 py-2 rounded-lg font-medium transition-all active">Student</button>
+                </div>
+
+                <form id="unifiedLoginForm" class="space-y-6">
+                    <div>
+                        <label for="loginIdentifier" class="block text-sm font-medium text-gray-700" id="identifierLabel">Teacher Email</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <input type="text" id="loginIdentifier" name="identifier" required placeholder="Enter Email or Student ID" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="loginPassword" class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <input type="password" id="loginPassword" name="password" required placeholder="Enter your password" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="text-sm">
+                                <a href="#" id="forgotPasswordLink" class="font-medium text-green-800 hover:text-green-700">Forgot password?</a>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-medium hover:opacity-90 transition-all">
+                            <i data-feather="log-in" class="w-5 h-5 inline mr-2"></i>Login
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </section>
+    
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <img src="/static/ieti-logo.png" alt="IETI College Logo" class="w-12 h-12">
+                        <h3 class="text-xl font-bold">IETI College</h3>
+                    </div>
+                    <p class="text-gray-400 mb-4">Empowering students through quality education and technology.</p>
+                    <h4 class="text-lg font-bold mb-2">Contact Us</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-start space-x-2 text-gray-400">
+                            <i data-feather="map-pin" class="w-4 h-4 flex-shrink-0 mt-1"></i>
+                            <span class="leading-relaxed">Main Campus: 161 R. Magsaysay Ave, San Pedro, 4023 Metro Manila</span>
+                        </li>
+                        <li class="flex items-center space-x-2 text-gray-400">
+                            <i data-feather="phone" class="w-4 h-4"></i>
+                            <span>Admissions: {PLACEHOLDER}</span>
+                        </li>
+                        <li class="flex items-center space-x-2 text-gray-400">
+                            <i data-feather="mail" class="w-4 h-4"></i>
+                            <span>Official Email: {PLACEHOLDER}</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="flex flex-col items-start md:items-end">
+                    <h3 class="text-lg font-bold mb-4">Visit IETI Today</h3>
+                    <div id="school-qr-placeholder" class="w-40 h-40 bg-white p-2 rounded-lg shadow-xl flex items-center justify-center border-4 border-green-800 overflow-hidden">
+                        <img src="/static/ieti-qr.png" alt="IETI College Website QR Code" class="w-full h-full object-cover">
+                    </div>
+                    <p class="mt-2 text-sm text-gray-400">Scan to visit the official IETI website.</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-10 pt-8 text-center text-gray-400">
+                <p>© 2025-2026 IETI San Pedro College. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+   <script>
+        feather.replace();
+
+        // --- Role Switching Logic ---
+        const roleButtons = document.querySelectorAll('.role-button');
+        const identifierLabel = document.getElementById('identifierLabel');
+        const loginIdentifierInput = document.getElementById('loginIdentifier');
+        // MODIFIED: Default role set to 'student'
+        let currentRole = 'student'; 
+
+        roleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                roleButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                currentRole = button.getAttribute('data-role');
+
+                if (currentRole === 'teacher') {
+                    identifierLabel.textContent = 'Teacher Email';
+                    loginIdentifierInput.placeholder = 'Enter Teacher Email';
+                } else {
+                    identifierLabel.textContent = 'Student Email';
+                    loginIdentifierInput.placeholder = 'Enter Student Email';
+                }
+            });
+        });
+        
+        if (roleButtons.length > 0) {
+            // MODIFIED: Click the Student button (index 1) to set the initial label/placeholder correctly.
+            roleButtons[1].click(); 
+        }
+
+        // --- Forgot Password Link Handler ---
+        document.getElementById('forgotPasswordLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+                icon: 'info',
+                title: 'Password Assistance',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-3">If you've forgotten your password, please contact:</p>
+                        <ul class="list-disc pl-5 mb-3">
+                            <li>College Head Mrs. Reyes</li>
+                            <li>IT Department</li>
+                            <li>MS. Marian</li>
+                        </ul>
+                        <p class="text-sm text-gray-600">They will assist you in resetting your password and regaining access to your account.</p>
+                    </div>
+                `,
+                confirmButtonText: 'Understood',
+                confirmButtonColor: '#006400'
+            });
+        });
+
+        // --- Unified Login Form Submission (Now using DB API) ---
+        document.getElementById('unifiedLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const API_BASE_URL = 'http://localhost:3000'; 
+            
+            // 1. Get form data
+            const identifier = document.getElementById('loginIdentifier').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            
+            if (!identifier || !password) {
+                return Swal.fire({ icon: 'warning', title: 'Missing Credentials', text: 'Please enter your email/ID and password.', confirmButtonColor: '#006400' });
+            }
+
+            try {
+                // 2. Send data to the Node.js API
+                const response = await fetch(`${API_BASE_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, password, role: currentRole }) // Send currentRole
+                });
+                const data = await response.json();
+                
+                // 3. Handle response
+                if (data.success) {
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: 'Login Successful', 
+                        text: `Welcome, ${data.full_name || currentRole}!`, 
+                        showConfirmButton: false,
+                        timer: 1500,
+                        timerProgressBar: true,
+                        confirmButtonColor: '#006400'
+                    }).then(() => { 
+                        // Redirect using the path determined by the server (which is now '/static/admin-dashboard.html' for admin)
+                        window.location.href = data.redirect; 
+                    });
+                } else {
+                    // Display error message from the server (e.g., Invalid credentials, Account pending)
+                    Swal.fire({ 
+                        icon: 'error', 
+                        title: 'Login Failed', 
+                        text: data.message || 'An unknown error occurred.', 
+                        confirmButtonColor: '#006400' 
+                    });
+                }
+
+            } catch (error) {
+                 console.error('Login Fetch Error:', error);
+                 Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Connection Error', 
+                    text: 'Could not connect to the backend server. Ensure Node.js is running.', 
+                    confirmButtonColor: '#EAB308' 
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // This block is now empty since the QR code is a static image.
+        });
+    </script>
+</body>
+</html>

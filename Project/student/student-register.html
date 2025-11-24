@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration | IETI EduTrack</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Styles matching index.html */
+        body {
+            background-image: url('/static/background.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #006400 0%, #4CAF50 100%);
+        }
+        .login-hero {
+            min-height: calc(100vh - 72px);
+            display: flex;
+            align-items: center;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .login-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="../static/ieti-logo.png" alt="IETI College Logo" class="w-12 h-12">
+                    <span class="text-xl font-bold">IETI San Pedro College</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="../index.html" class="px-4 py-2 border border-white text-white rounded-lg font-medium hover:bg-white hover:text-green-800 transition-all">Back to Login</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="text-white login-hero">
+        <div class="container mx-auto px-6 login-container">
+            <div class="w-full max-w-lg bg-white p-8 rounded-xl shadow-2xl space-y-6">
+                
+                <div class="text-center">
+                    <img src="../static/ieti-logo.png" alt="School Logo" class="w-24 h-24 mx-auto mb-4 object-contain">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Student Registration</h2>
+                    <p class="text-sm text-gray-600">Create your account to track attendance.</p>
+                </div>
+
+                <form id="studentRegisterForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <input type="text" id="name" required placeholder="Juan Dela Cruz" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Course</label>
+                            <select id="course" class="block w-full px-3 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                <option value="BSIT">BSIT</option>
+                                <option value="BSCS">BSCS</option>
+                                <option value="BSCpe">BSCpe</option>
+                                <option value="BSBA">BSBA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Year</label>
+                            <select id="year_level" class="block w-full px-3 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <input type="email" id="email" required placeholder="student@ieti.edu.ph" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <input type="password" id="password" required placeholder="••••••••" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-medium hover:opacity-90 transition-all mt-4">
+                        Register Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        feather.replace();
+        const API_BASE_URL = 'http://localhost:3000'; 
+
+        document.getElementById('studentRegisterForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // 2. Collect form data using the now-correct IDs
+            const name = document.getElementById('name').value.trim();
+            const course = document.getElementById('course').value; // Reads the value attribute
+            const year_level = document.getElementById('year_level').value; // Reads the value attribute
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!name || !course || !year_level || !email || !password) {
+                return Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Please fill out all required fields.', confirmButtonColor: '#006400' });
+            }
+            
+            try {
+                // 3. Send data to the Node.js API
+                const response = await fetch(`${API_BASE_URL}/api/register/student`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, course, year_level })
+                });
+                const data = await response.json();
+                
+                // 4. Handle response
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Registration Successful!', text: data.message || 'Your account has been created. Please login.', confirmButtonColor: '#006400' })
+                    .then(() => { window.location.href = '../index.html'; });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Registration Failed', text: data.message || 'An account with this email already exists.', confirmButtonColor: '#006400' });
+                }
+            } catch (error) {
+                 Swal.fire({ icon: 'error', title: 'Connection Error', text: 'Could not connect to the backend server. Ensure Node.js is running.', confirmButtonColor: '#EAB308' });
+            }
+        });
+    </script>
+</body>
+</html>

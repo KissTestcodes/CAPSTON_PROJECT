@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Registration | IETI EduTrack</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Styles matching index.html */
+        body {
+            background-image: url('/static/background.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #006400 0%, #4CAF50 100%);
+        }
+        .login-hero {
+            min-height: calc(100vh - 72px);
+            display: flex;
+            align-items: center;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .login-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen"> 
+    
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="/static/ieti-logo.png" alt="IETI College Logo" class="w-12 h-12">
+                    <span class="text-xl font-bold">IETI San Pedro College</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="../index.html" class="px-4 py-2 border border-white text-white rounded-lg font-medium hover:bg-white hover:text-green-800 transition-all">Back to Login</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="text-white login-hero">
+        <div class="container mx-auto px-6 login-container">
+            <div class="w-full max-w-lg bg-white p-8 rounded-xl shadow-2xl space-y-6">
+                
+                <div class="text-center">
+                    <img src="/static/ieti-logo.png" alt="School Logo" class="w-24 h-24 mx-auto mb-4 object-contain">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Teacher Registration</h2>
+                    <p class="text-sm text-gray-600">Faculty registration requires admin approval.</p>
+                </div>
+
+                <form id="teacherRegisterForm" class="space-y-4">
+                    <div>
+                        <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <input type="text" id="fullName" name="fullName" required placeholder="Juan Dela Cruz" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">Institutional Email</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <input type="email" id="email" name="email" required placeholder="teacher@ieti.edu.ph" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <input type="password" id="password" name="password" required placeholder="••••••••" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-medium hover:opacity-90 transition-all mt-4">
+                        Submit for Approval
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+   <script>
+    // Initialize icons
+    feather.replace(); 
+
+    const form = document.getElementById('teacherRegistrationForm');
+    // NOTE: Ensure your form inputs have these IDs: 
+    // teacherFullName, teacherEmail, teacherPassword, teacherConfirmPassword
+    const API_BASE_URL = 'http://localhost:3000'; 
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const full_name = document.getElementById('teacherFullName').value.trim();
+        const email = document.getElementById('teacherEmail').value.trim();
+        const password = document.getElementById('teacherPassword').value.trim();
+        const confirmPassword = document.getElementById('teacherConfirmPassword').value.trim();
+
+        if (password !== confirmPassword) {
+            return Swal.fire({ 
+                icon: 'error', 
+                title: 'Registration Failed', 
+                text: 'Passwords do not match.',
+                confirmButtonColor: '#EAB308'
+            });
+        }
+        
+        // Disable button while processing
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i data-feather="loader" class="animate-spin w-5 h-5 inline mr-2"></i> Registering...';
+        feather.replace(); 
+
+        try {
+            // Send data to the server endpoint
+            const response = await fetch(`${API_BASE_URL}/api/register/teacher`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ full_name, email, password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Registration Successful!',
+                    text: data.message || 'Account created successfully. You may now log in.',
+                    confirmButtonColor: '#006400'
+                }).then(() => {
+                    // Redirect back to the main login page
+                    window.location.href = '../index.html';
+                });
+            } else {
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Registration Failed', 
+                    text: data.message || 'An error occurred during registration.', 
+                    confirmButtonColor: '#EAB308' 
+                });
+            }
+        } catch (error) {
+            console.error('Registration Fetch Error:', error);
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Connection Error', 
+                text: 'Could not reach the server. Please check your network and Node.js process.', 
+                confirmButtonColor: '#EAB308' 
+            });
+        } finally {
+            // Re-enable button
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i data-feather="user-plus" class="w-5 h-5 inline mr-2"></i> Register Account';
+            feather.replace();
+        }
+    });
+</script>
+</body>
+</html>
