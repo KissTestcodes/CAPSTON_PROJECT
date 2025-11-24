@@ -2,10 +2,15 @@
 const mysql = require('mysql2');
 
 const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root', 
-    password: '', // <-- Set to empty string for default XAMPP configuration
-    database: 'ieti_edutrack_db',
+    // --- START: CHANGES FOR RAILWAY DEPLOYMENT ---
+    // Railway automatically provides these environment variables for its managed MySQL service.
+    host: process.env.MYSQLHOST,
+    user: process.env.MYSQLUSER, 
+    password: process.env.MYSQLPASSWORD, 
+    database: process.env.MYSQLDATABASE,
+    port: process.env.MYSQLPORT, 
+    // --- END: CHANGES FOR RAILWAY DEPLOYMENT ---
+    
     // Standard connection options
     waitForConnections: true,
     connectionLimit: 10,
