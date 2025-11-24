@@ -1,38 +1,12 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors'); 
-const db = require('./db'); // Connects to your ieti_edutrack_db via XAMPP
+const db = require('./db'); // Connects to your ieti_edutrack_db via Railway MySQL
 
 const app = express();
-const PORT = 3000;
-
-// ===================================================================
-//  Activity Log Implementation (In-Memory, Max 10 entries)
-// ===================================================================
-const MAX_ACTIVITIES = 10;
-let activityLog = []; // Stores objects like: { timestamp: '...', description: '...' }
-
-/**
- * Adds a new activity to the log, maintaining a max size of MAX_ACTIVITIES.
- * @param {string} description - The event that occurred.
- */
-function logActivity(description) {
-    // Use the timezone appropriate for the user's assumed context (Philippines)
-    const timestamp = new Date().toLocaleString('en-US', { 
-        timeZone: 'Asia/Manila', 
-        year: 'numeric', month: 'short', day: 'numeric', 
-        hour: '2-digit', minute: '2-digit', second: '2-digit' 
-    });
-
-    activityLog.unshift({ timestamp, description }); // Add to the front
-
-    // Enforce max size (deleting the oldest entry)
-    if (activityLog.length > MAX_ACTIVITIES) {
-        activityLog.pop();
-    }
-    console.log(`[Activity Logged] ${description}`);
-}
-
+// --- START: CHANGES FOR RAILWAY DEPLOYMENT ---
+const PORT = process.env.PORT || 3000; // Use Railway's port or default to 3000
+// --- END: CHANGES FOR RAILWAY DEPLOYMENT ---
 
 // ===================================================================
 //  Static File Serving 
@@ -58,7 +32,7 @@ app.get('/', (req, res) => {
 });
 
 // -------------------------------------------------------------------
-// 1. TEACHER REGISTRATION - LIVE DB INSERTION (Pending Status)
+// 1. TEACHER REGISTRATION - LIVE DB INSERTION (Plain Password)
 // -------------------------------------------------------------------
 app.post('/api/register/teacher', async (req, res) => {
     const { full_name, email, password } = req.body;
@@ -83,7 +57,6 @@ app.post('/api/register/teacher', async (req, res) => {
         );
         
         console.log(`DB Insert: Teacher ${email} registered.`);
-        logActivity(`NEW TEACHER registered: ${email}. Status: Pending.`);
         
         res.json({ success: true, message: 'Registration received. Account pending admin approval.' });
 
@@ -94,7 +67,7 @@ app.post('/api/register/teacher', async (req, res) => {
 });
 
 // -------------------------------------------------------------------
-// 2. STUDENT REGISTRATION - LIVE DB INSERTION
+// 2. STUDENT REGISTRATION - LIVE DB INSERTION (Plain Password)
 // -------------------------------------------------------------------
 app.post('/api/register/student', async (req, res) => {
     const { name: full_name, email, password, course, year_level } = req.body;
@@ -119,7 +92,6 @@ app.post('/api/register/student', async (req, res) => {
         );
         
         console.log(`DB Insert: Student ${email} registered.`);
-        logActivity(`NEW STUDENT registered: ${email} (Course: ${course}).`);
         
         res.json({ success: true, message: 'Registration successful. You may now log in.' });
 
@@ -131,7 +103,7 @@ app.post('/api/register/student', async (req, res) => {
 
 
 // -------------------------------------------------------------------
-// 3. UNIFIED LOGIN - LIVE DB AUTHENTICATION
+// 3. UNIFIED LOGIN - LIVE DB AUTHENTICATION (Plain Password Comparison)
 // -------------------------------------------------------------------
 app.post('/api/login', async (req, res) => {
     const { identifier, password, role } = req.body;
@@ -186,62 +158,6 @@ app.post('/api/login', async (req, res) => {
 
 
 // ===================================================================
-//  NEW: Admin User Creation Endpoint
-// ===================================================================
-app.post('/api/admin/register-user', async (req, res) => {
-    const { role, full_name, email, password, course, year_level } = req.body;
-
-    if (!role || !full_name || !email || !password) {
-        return res.status(400).json({ success: false, message: 'Role, Name, Email, and Password are required.' });
-    }
-
-    try {
-        let tableName;
-        let query;
-        let queryParams;
-        let isTeacher = (role === 'teacher' || role === 'admin');
-
-        tableName = isTeacher ? 'teachers' : 'students';
-        
-        // 1. Check for existing user with the same email in the target table
-        const [existingUser] = await db.execute(
-            `SELECT email FROM ${tableName} WHERE email = ?`, 
-            [email]
-        );
-
-        if (existingUser.length > 0) {
-            return res.status(409).json({ success: false, message: `An account with this email already exists in the ${tableName} database.` });
-        }
-        
-        if (isTeacher) {
-            // Teacher/Admin registration logic
-            let status = (role === 'admin') ? 'active' : 'active'; // Admin-added faculty are active immediately
-            query = 'INSERT INTO teachers (full_name, email, password, status) VALUES (?, ?, ?, ?)';
-            queryParams = [full_name, email, password, status];
-        } else {
-            // Student registration logic
-            if (!course || !year_level) {
-                return res.status(400).json({ success: false, message: 'Course and Year Level are required for students.' });
-            }
-            query = 'INSERT INTO students (full_name, email, password, course, year_level) VALUES (?, ?, ?, ?, ?)';
-            queryParams = [full_name, email, password, course, year_level];
-        }
-        
-        await db.execute(query, queryParams);
-        
-        const logRole = (role === 'admin') ? 'ADMIN' : (isTeacher ? 'FACULTY' : 'STUDENT');
-        logActivity(`NEW ${logRole} account ADDED by Admin: ${email}.`);
-        
-        res.json({ success: true, message: `${logRole} account successfully created.` });
-
-    } catch (error) {
-        console.error('Admin Registration DB Error:', error);
-        res.status(500).json({ success: false, message: 'Server failed to process admin registration.' });
-    }
-});
-
-
-// ===================================================================
 //  Admin Dashboard Data Routes
 // ===================================================================
 
@@ -286,19 +202,10 @@ app.post('/api/admin/teacher-status', async (req, res) => {
     }
 
     try {
-        // Fetch name before updating (for logging)
-        const [teacherNameRow] = await db.execute('SELECT full_name FROM teachers WHERE id = ?', [teacherId]);
-        const teacherName = teacherNameRow.length > 0 ? teacherNameRow[0].full_name : `Teacher ID ${teacherId}`;
-
-        const [result] = await db.execute(
+        await db.execute(
             'UPDATE teachers SET status = ? WHERE id = ?',
             [status, teacherId]
         );
-        
-        if (result.affectedRows > 0) {
-            logActivity(`Faculty request for ${teacherName} was ${status === 'active' ? 'APPROVED' : 'DENIED'}.`);
-        }
-
         res.json({ success: true, message: `Teacher ID ${teacherId} status updated to ${status}.` });
     } catch (error) {
         console.error('Update Teacher Status Error:', error);
@@ -308,19 +215,7 @@ app.post('/api/admin/teacher-status', async (req, res) => {
 
 
 // ===================================================================
-//  Admin Activity Log Route
-// ===================================================================
-
-/**
- * Endpoint to fetch the recent admin activity log (in-memory).
- */
-app.get('/api/admin/activities', (req, res) => {
-    res.json({ success: true, activities: activityLog });
-});
-
-
-// ===================================================================
-//  Admin Update User Route (Edit Name, Email, Password)
+//  NEW: Admin Update User Route (Edit Name, Email, Password)
 // ===================================================================
 
 /**
@@ -377,8 +272,6 @@ app.post('/api/admin/update-user', async (req, res) => {
         }
         
         console.log(`DB Update: ${role} ID ${id} updated.`);
-        logActivity(`${role.toUpperCase()} account ${email} (ID: ${id}) was EDITED/UPDATED.`);
-        
         res.json({ success: true, message: `${role} account updated successfully.` });
 
     } catch (error) {
@@ -393,49 +286,9 @@ app.post('/api/admin/update-user', async (req, res) => {
 
 
 // ===================================================================
-//  NEW: Admin User Deletion
-// ===================================================================
-app.post('/api/admin/delete-user', async (req, res) => {
-    const { id, role } = req.body; 
-
-    if (!id || !role) {
-        return res.status(400).json({ success: false, message: 'Missing user ID or role.' });
-    }
-    if (role === 'admin') {
-         return res.status(403).json({ success: false, message: 'Admin account cannot be deleted via this endpoint.' });
-    }
-
-    let tableName = (role === 'student') ? 'students' : 'teachers';
-
-    try {
-        // Fetch name/email before deletion (for logging)
-        const [userRow] = await db.execute(`SELECT full_name, email FROM ${tableName} WHERE id = ?`, [id]);
-        const userData = userRow.length > 0 ? userRow[0] : null;
-        const userName = userData ? userData.full_name : `${role} ID ${id}`;
-
-        const [result] = await db.execute(
-            `DELETE FROM ${tableName} WHERE id = ?`,
-            [id]
-        );
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: `${role} with ID ${id} not found.` });
-        }
-        
-        logActivity(`${role.toUpperCase()} account ${userName} (ID: ${id}) was REMOVED by Admin.`);
-        
-        res.json({ success: true, message: `${role} account successfully removed.` });
-
-    } catch (error) {
-        console.error('Delete User DB Error:', error);
-        res.status(500).json({ success: false, message: 'Server failed to delete user.' });
-    }
-});
-
-
-// ===================================================================
 //  Start Server
 // ===================================================================
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    // Console log updated to show the dynamic port
+    console.log(`Server is running on port ${PORT}`);
 });
